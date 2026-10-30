@@ -1,34 +1,15 @@
 # Koinos Code plugin
 
-A local coding workspace for **KAI Core 0.2.0 or later**. Install the signed `kai.code` release package through Core's plugin catalog or package installer.
+The original Koinos Code workspace, installed separately in KAI Core. Its project and conversation rails, folder and GitHub screens, composer, plan review, edit diffs, command approvals, slash commands and model/tool pickers use the original application renderer and styles.
 
-The separate plugin window uses the original Koinos Code project and chat rail, folder-selection screen, bottom task composer, and review cards in the same light workspace style as Core. File context can be expanded or collapsed without changing the file. Notices have a dismiss button.
+The plugin runs the original `CodeAgent`, `CodeProjects`, GitHub client and gateway handlers through publisher-pinned native brokers. It supports multi-file coding, new files, reviewed commands, project instructions, helper agents, plan-first runs, conversation history, project model pins, selected tools, GitHub connection/cloning, branches, commits, pushes and pull requests. Model-generated edits and commands still pause for approval. Native review is bound to the actual proposed operation; a plugin cannot substitute its own description for the operation being approved.
 
-## Available capabilities
+Existing projects, sessions and GitHub connection data stay at their original paths. Corrupt records and changes made outside Core stop writes instead of resetting saved data. Project tools and interface preferences are imported from the original desktop origin, then stored in persistent plugin storage. Code stays local: project context does not silently move to a network model.
 
-- Open a project with the native folder picker, or explicitly grant session access to a saved project.
-- Reuse the existing KAI `code-projects.json` registry and view earlier coding sessions without moving project files.
-- Browse a project and preview UTF-8 text files up to 256 KB.
-- Edit a file manually and stage a review, or ask an installed local model to propose a complete replacement for one selected file.
-- Inspect the changed lines and complete proposed result before applying.
-- Apply only after native confirmation. Core checks the original file's SHA-256 and identity again after review; changed files are never overwritten silently.
-- Revoke access or close the plugin to end its project grants.
+The renderer has no Node access, direct filesystem access, arbitrary network requests or unrestricted IPC. Private Core/profile locations cannot be selected as coding projects. Closing or disabling the plugin cancels its active runs and pending approvals.
 
-The plugin does not run shell commands, execute generated code, access private accounts, use Brain, create/delete files, or automatically change multiple files. AI proposals support source files up to 12,000 characters; reviewed manual replacements support files up to 16,000 characters. The complete change is shown in the native review. Files remain on disk until explicit approval.
+`code.execute` grants access to the original coding workspace and its separately reviewed filesystem, process and Git actions. Earlier bounded file-edit capabilities remain available for compatibility. `storage.read`/`storage.write` preserve interface preferences; `desktop.preferences` can read only the fixed, non-secret Code/interface preference keys.
 
-## Permissions
+Run `npm test` for renderer transport and protocol tests. Core's `plugin-code-workspace.test.js` and `plugin-code-original-engine.test.js` exercise route scoping, native review, lifetime cancellation, and a real original CodeAgent edit against generated project files. The native parity smoke exercises the original UI in the actual sandboxed plugin host. No user files, paid models or real GitHub publishing are used by these tests.
 
-| Permission | Purpose |
-| --- | --- |
-| `models.read` | List installed local models |
-| `code.read` | Native project selection, granted file reads, saved coding sessions |
-| `code.assist` | Generate a local suggestion for the selected file |
-| `code.write` | Stage a replacement and request native approval to apply it |
-
-These are first-party broker capabilities supplied by Core. The sandboxed UI cannot access the filesystem directly. Symlinks, hard links, private KAI profile folders, common credential files and unrestricted paths are rejected. No workflow/network host receives these capabilities.
-
-## Development
-
-This repository contains the renderer in `plugin/`: `index.html`, `app.js`, `style.css`, and `manifest.json`. The native service lives in `kai-core/electron/plugin-services/code.js`. Core owns publisher verification, plugin isolation and permissions.
-
-Use Core's `plugin:pack` script with an Ed25519 publisher key to create a `.kaiplugin` package. Never commit the private signing key. Official releases must be signed by the publisher pinned in Core; a self-signed package cannot claim these privileged first-party capabilities.
+Original UI source baseline: `therexdev/kaiapp` commit `34d17faa0526213b8fc0ac7a65aa7f2c186c6547`, `ui/code-view.js`, the `view-code` section of `ui/index.html`, `ui/styles.css`, and `ui/product-experience.css`. The source renderer is retained; the new bridge changes only its transport and surrounding application window.

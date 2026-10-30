@@ -1,27 +1,154 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Koinos Code</title><link rel="stylesheet" href="kai-theme.css"><link rel="stylesheet" href="style.css"></head>
-<body>
-<header class="workspace-header"><div class="workspace-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg><h1>Koinos Code</h1></div><span class="workspace-caption">LOCAL WORKSPACE</span></header>
-<div id="notice" role="status" aria-live="polite" hidden></div>
-<div class="layout kc-shell">
-  <aside class="kc-rail" aria-label="Projects and files">
-    <button id="choose" class="kc-new">+ Open project</button>
-    <div class="section-label">Projects</div><div id="projects" class="kc-list"><p class="muted">Loading saved projects…</p></div>
-    <div class="section-label spaced">Chats</div><div id="sessions" class="kc-list"><p class="muted">Select a project to see its chats.</p></div>
-    <details id="project-files" class="project-files" hidden open><summary>Project files</summary><div class="crumb"><button id="up" disabled aria-label="Parent directory">↑</button><span id="directory">No project open</span></div><div id="files"><p class="muted">Choose a project to browse its files.</p></div></details>
-    <div class="kc-rail-foot"><button id="revoke" class="quiet" hidden>Close project access</button></div>
-  </aside>
-  <main class="kc-pane">
-    <div id="workspace-heading" class="workspace-head" hidden><div><h2 id="filename">No file selected</h2><p class="muted">Select a file to review or describe a change.</p></div><button id="reload" disabled>Reload file</button></div>
-    <div class="workspace-body">
-      <div id="empty" class="kc-start"><h2 id="start-title">Koinos Code</h2><p id="start-detail">Point it at a folder and tell it what to do. It shows you every change before anything happens.</p><div class="kc-choices"><button id="choose-start" class="kc-choice"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5h6l2 2h10v13H3ZM3 7h18"/></svg><span class="kc-choice-title">Select a folder</span><span class="kc-choice-sub">Work on something already on this machine</span></button></div><p id="file-hint" class="fine" hidden>Choose a file from Project files to begin.</p></div>
-      <div id="editor-area" hidden><details class="file-preview" open><summary><span>File content</span><span id="file-size"></span></summary><label for="editor" class="sr-only">File content</label><textarea id="editor" spellcheck="false" wrap="off"></textarea><div class="editor-actions"><span class="muted">Edits stay here until you review and apply them.</span><button id="stage">Review my edits</button></div></details></div>
-      <section id="proposal" hidden class="proposal"><div class="proposal-heading"><h2 id="proposal-title">Proposed change</h2><span class="badge amber">Not applied</span></div><p id="summary"></p><div class="review-tabs" role="tablist" aria-label="Proposal preview"><button id="tab-diff" class="active" role="tab" aria-selected="true" aria-controls="diff">Changes</button><button id="tab-file" role="tab" aria-selected="false" aria-controls="result">Complete result</button></div><pre id="diff" role="tabpanel" aria-labelledby="tab-diff" tabindex="0"></pre><pre id="result" hidden role="tabpanel" aria-labelledby="tab-file" tabindex="0"></pre><div class="proposal-actions"><span class="fine">Review the exact change before applying.</span><button id="discard">Discard</button><button id="apply" class="primary">Review &amp; apply</button></div></section>
-      <section id="history" hidden class="history"><div class="row"><h2 id="history-title">Chat</h2><button id="close-history" class="close-button" aria-label="Close saved chat" title="Close saved chat">×</button></div><div id="turns"></div></section>
-    </div>
-    <section id="assist" class="assist" hidden aria-label="Coding assistant"><div class="kc-composer"><label for="instruction" class="sr-only">Describe a change</label><textarea id="instruction" rows="2" maxlength="2000" placeholder="What should it do? Describe a change to the selected file."></textarea><button id="suggest" class="primary">Send</button></div><div class="assist-bottom"><label for="model">Model</label><select id="model"><option value="">Choose an installed model</option></select><span class="fine">Selected file only · Local model</span></div></section>
-  </main>
-</div>
-<footer><span class="status-dot"></span><span id="status" role="status">Ready · nothing has been changed</span></footer>
-<script src="kai-notices.js"></script><script src="app.js"></script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Koinos Code</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="product-experience.css"><link rel="stylesheet" href="plugin-shell.css"></head>
+<body class="product-v2"><main id="plugin-workspace">
+      <section id="view-code" class="view">
+        <div class="kc-shell">
+          <!-- Projects rail -->
+          <aside class="kc-rail">
+            <button id="btn-kc-new" class="kc-new">+ New chat</button>
+            <div class="kc-rail-label">Projects</div>
+            <div id="kc-projects" class="kc-list"></div>
+            <div class="kc-rail-label kc-rail-sessions" id="kc-sessions-label" hidden>Chats</div>
+            <div id="kc-sessions" class="kc-list"></div>
+            <div class="kc-rail-foot">
+              <div id="kc-gh-status" class="kc-gh"></div>
+              <button id="btn-kc-gh" class="kc-link">Connect GitHub</button>
+            </div>
+          </aside>
+
+          <!-- Working pane -->
+          <main class="kc-pane">
+            <!-- START SCREEN: no project chosen -->
+            <div id="kc-start" class="kc-start">
+              <h1 class="kc-start-title">Koinos Code</h1>
+              <p class="kc-start-sub">Point it at a folder and tell it what to do. It shows you every change before anything happens.</p>
+
+              <div class="kc-choices">
+                <button id="btn-kc-pick" class="kc-choice">
+                  <span class="kc-choice-title">Select a folder</span>
+                  <span class="kc-choice-sub">Work on something already on this machine</span>
+                </button>
+                <button id="btn-kc-clone" class="kc-choice">
+                  <span class="kc-choice-title">Clone from GitHub</span>
+                  <span class="kc-choice-sub">Copy a repository down and start on it</span>
+                </button>
+              </div>
+
+              <!-- Inline folder browser (no window.prompt: it does not exist in Electron) -->
+              <div id="kc-browse" class="kc-panel" hidden>
+                <div class="kc-panel-head">
+                  <b>Choose a folder</b>
+                  <button id="btn-kc-browse-close" class="kc-x" aria-label="Close">✕</button>
+                </div>
+                <div class="form-row">
+                  <input id="kc-browse-path" placeholder="Type or paste a full path" />
+                  <button id="btn-kc-browse-go" class="small">Go</button>
+                </div>
+                <div id="kc-browse-list" class="kc-browse-list"></div>
+                <div class="form-row">
+                  <button id="btn-kc-browse-use" class="primary small">Use this folder</button>
+                  <span id="kc-browse-here" class="meta"></span>
+                </div>
+              </div>
+
+              <!-- Inline clone form -->
+              <div id="kc-clone" class="kc-panel" hidden>
+                <div class="kc-panel-head">
+                  <b>Clone a repository</b>
+                  <button id="btn-kc-clone-close" class="kc-x" aria-label="Close">✕</button>
+                </div>
+                <div class="form-row">
+                  <input id="kc-clone-repo" placeholder="owner/name — or the full GitHub URL" />
+                </div>
+                <!-- Destination. The BUTTON is the affordance, same native
+                     window as "Select a folder" on the start screen; the typed
+                     path is the fallback for the served UI, which has no
+                     dialog to open. -->
+                <div class="form-row">
+                  <button id="btn-kc-clone-pick" class="small">Select a folder…</button>
+                  <span id="kc-clone-parent-label" class="meta">no folder chosen yet</span>
+                </div>
+                <div class="form-row" id="kc-clone-parent-row">
+                  <input id="kc-clone-parent" placeholder="Folder to clone into — full path" />
+                </div>
+                <div class="form-row">
+                  <button id="btn-kc-clone-go" class="primary small">Clone and start</button>
+                  <span id="kc-clone-status" class="meta"></span>
+                </div>
+                <div id="kc-repo-list" class="kc-browse-list" hidden></div>
+              </div>
+
+              <div id="kc-start-error" class="kc-error" hidden></div>
+            </div>
+
+            <!-- CHAT: a project is chosen -->
+            <div id="kc-chat" class="kc-chat" hidden>
+              <header class="kc-head">
+                <div class="kc-head-main">
+                  <span id="kc-title" class="kc-head-title"></span>
+                  <span id="kc-path" class="kc-head-path"></span>
+                </div>
+                <div class="kc-head-actions">
+                  <span id="kc-branch" class="kc-branch" hidden></span>
+                  <button id="btn-kc-git" class="small" hidden>Git</button>
+                  <button id="btn-kc-rename" class="small">Rename</button>
+                  <button id="btn-kc-forget" class="small">Forget</button>
+                </div>
+              </header>
+
+              <!-- Git actions, revealed by the Git button -->
+              <div id="kc-git-bar" class="kc-panel" hidden>
+                <div class="form-row">
+                  <input id="kc-git-input" placeholder="Branch name / commit message / PR title" />
+                  <button id="btn-kc-branch" class="small">Branch</button>
+                  <button id="btn-kc-commit" class="small">Commit</button>
+                  <button id="btn-kc-push" class="small">Push</button>
+                  <button id="btn-kc-pr" class="small">Pull request</button>
+                </div>
+                <div class="form-row"><span id="kc-git-status" class="meta"></span></div>
+              </div>
+
+              <!-- Rename, inline -->
+              <div id="kc-rename-bar" class="kc-panel" hidden>
+                <div class="form-row">
+                  <input id="kc-rename-input" placeholder="Project name" />
+                  <button id="btn-kc-rename-save" class="primary small">Save</button>
+                  <button id="btn-kc-rename-cancel" class="small">Cancel</button>
+                </div>
+              </div>
+
+              <div id="kc-trace" class="kc-transcript"></div>
+
+              <div id="kc-cmd-hints" class="kc-browse-list kc-cmd-hints" hidden></div>
+              <div class="kc-composer">
+                <textarea id="kc-task" rows="1" placeholder="What should it do? (Enter to send, Shift+Enter for a new line)"></textarea>
+                <button id="btn-kc-run" class="primary small">Send</button>
+                <button id="btn-kc-stop" class="small" hidden>Stop</button>
+              </div>
+              <div class="kc-composer-opts">
+                <label class="check kc-opt"><input type="checkbox" id="kc-plan" /> Plan first</label>
+                <label class="kc-opt" for="kc-model">Model</label>
+                <select id="kc-model" title="Which model does the work. Koinos Code runs on this machine only — the agent reads your project's files into the prompt, and those do not leave the computer."></select>
+                <button id="btn-kc-tools" class="kc-link">Tools…</button>
+                <span id="kc-tools-summary" class="meta"></span>
+              </div>
+              <div id="kc-tools-panel" class="kc-panel" hidden>
+                <div class="kc-panel-head">
+                  <b>Tools this project may use</b>
+                  <button id="btn-kc-tools-close" class="kc-x" aria-label="Close">✕</button>
+                </div>
+                <p class="kc-choice-sub" id="kc-tools-note"></p>
+                <div id="kc-tools-list" class="kc-browse-list"></div>
+              </div>
+              <div class="kc-statusline"><span id="kc-status" class="meta"></span></div>
+            </div>
+          </main>
+        </div>
+      </section>
+</main>
+<script src="locales/catalogs.js"></script>
+<script src="i18n.js"></script>
+<script src="bridge.js"></script>
+<script src="app.js"></script>
+<script src="boot.js"></script>
 </body></html>

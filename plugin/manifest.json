@@ -2,14 +2,18 @@
   "schema": 1,
   "apiVersion": 2,
   "id": "kai.code",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "name": "Koinos Code",
-  "description": "Open a local coding project, browse text files, ask an installed model for a change, and apply a reviewed edit. Existing project sessions are preserved. Requires KAI Core 0.2.0.",
+  "description": "The complete original coding workspace: projects and conversations, plan-first coding, reviewed file changes and commands, project tools, slash commands, and GitHub.",
   "entry": "index.html",
   "permissions": [
     "models.read",
     "code.read",
     "code.assist",
-    "code.write"
+    "code.write",
+    "code.execute",
+    "desktop.preferences",
+    "storage.read",
+    "storage.write"
   ]
 }
