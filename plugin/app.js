@@ -3,15 +3,21 @@
   const $ = id => document.getElementById(id), api = (method, input) => window.kai.call(method, input);
   let grant = null, selected = null, proposal = null, directory = "", revision = 0, pending = false;
   const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const notify = (message, error = false) => { $("notice").textContent = message; $("notice").hidden = false; $("notice").classList.toggle("error", error); };
+  const banner = window.KaiPluginNotice.attach($("notice"), { focusTarget: () => selected ? $("instruction") : $("choose") });
+  const notify = (message, error = false) => banner.show(message, { error, force: true });
   function status(message) { $("status").textContent = message; }
   async function run(fn) {
-    if (pending) return; pending = true;
-    document.querySelectorAll("button").forEach(b => { b.dataset.wasDisabled = String(b.disabled); b.disabled = true; });
+    if (pending) return; pending = true; banner.clear();
+    document.querySelectorAll("button:not(.kai-notice-close)").forEach(b => { b.dataset.wasDisabled = String(b.disabled); b.disabled = true; });
     try { await fn(); } catch (error) { notify(error.message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, ""), true); status("Action stopped · no automatic retry"); }
-    finally { pending = false; document.querySelectorAll("button").forEach(b => { b.disabled = b.dataset.wasDisabled === "true"; delete b.dataset.wasDisabled; }); update(); }
+    finally { pending = false; document.querySelectorAll("button:not(.kai-notice-close)").forEach(b => { b.disabled = b.dataset.wasDisabled === "true"; delete b.dataset.wasDisabled; }); update(); }
   }
-  function update() { $("reload").disabled = !selected; $("up").disabled = !grant || !directory; $("revoke").hidden = !grant; $("suggest").disabled = !selected || !$("model").value; $("apply").disabled = !proposal; }
+  function update() {
+    $("workspace-heading").hidden = !grant; $("project-files").hidden = !grant; $("assist").hidden = !selected;
+    $("choose-start").hidden = !!grant; $("file-hint").hidden = !grant;
+    $("start-title").textContent = grant ? grant.project.name : "Koinos Code";
+    $("start-detail").textContent = grant ? "Choose a file from your project, describe a change, and review the result before applying it." : "Point it at a folder and tell it what to do. It shows you every change before anything happens.";
+    $("reload").disabled = !selected; $("up").disabled = !grant || !directory; $("revoke").hidden = !grant; $("suggest").disabled = !selected || !$("model").value; $("apply").disabled = !proposal; }
   async function projects() {
     const result = await api("code.projects");
     $("projects").innerHTML = result.projects.length ? result.projects.map(p => `<button class="project ${grant?.project.id === p.id ? "selected" : ""}" data-project="${esc(p.id)}" ${p.missing ? "disabled" : ""}><strong>${esc(p.name)}</strong><small>${p.missing ? "Folder unavailable" : `${p.sessions} saved sessions`}</small></button>`).join("") : '<p class="muted">No projects yet. Open a folder to get started.</p>';
@@ -41,10 +47,11 @@
   function showProposal(result) {
     proposal = result; $("proposal-title").textContent = result.path; $("summary").textContent = result.summary;
     $("diff").textContent = result.diff; $("result").textContent = result.content; $("proposal").hidden = false;
-    $("diff").hidden = false; $("result").hidden = true; $("tab-diff").classList.add("active"); $("tab-file").classList.remove("active");
+    $("diff").hidden = false; $("result").hidden = true; $("tab-diff").classList.add("active"); $("tab-file").classList.remove("active"); $("tab-diff").setAttribute("aria-selected", "true"); $("tab-file").setAttribute("aria-selected", "false");
     status("Proposal ready · no file has been changed"); $("proposal").scrollIntoView({ block: "start", behavior: "auto" }); update();
   }
   $("choose").onclick = () => run(async () => openGrant(await api("code.choose")));
+  $("choose-start").onclick = () => $("choose").onclick();
   $("projects").onclick = e => { const b = e.target.closest("[data-project]"); if (b) void run(async () => openGrant(await api("code.open", { projectId: b.dataset.project }))); };
   $("files").onclick = e => { const b = e.target.closest("[data-file]"); if (b) void run(() => b.dataset.kind === "directory" ? browse(b.dataset.file) : readFile(b.dataset.file)); };
   $("up").onclick = () => run(() => browse(directory.split("/").slice(0, -1).join("/")));
@@ -66,9 +73,9 @@
     if (!result.applied) { notify("Change kept as a proposal. Nothing was written."); return; }
     const file = result.path; await readFile(file); await sessions(); notify(`Applied your reviewed change to ${file}.`); status("Reviewed change saved");
   });
-  $("tab-diff").onclick = () => { $("diff").hidden = false; $("result").hidden = true; $("tab-diff").classList.add("active"); $("tab-file").classList.remove("active"); };
-  $("tab-file").onclick = () => { $("diff").hidden = true; $("result").hidden = false; $("tab-file").classList.add("active"); $("tab-diff").classList.remove("active"); };
-  $("revoke").onclick = () => run(async () => { await api("code.revoke", { handle: grant.handle }); grant = null; selected = null; revision++; clearProposal(); $("editor").value = ""; $("editor-area").hidden = true; $("empty").hidden = false; $("history").hidden = true; $("files").replaceChildren(); $("directory").textContent = "No project open"; $("filename").textContent = "A clear view of your work"; await projects(); await sessions(); status("Project access closed"); });
+  $("tab-diff").onclick = () => { $("diff").hidden = false; $("result").hidden = true; $("tab-diff").classList.add("active"); $("tab-file").classList.remove("active"); $("tab-diff").setAttribute("aria-selected", "true"); $("tab-file").setAttribute("aria-selected", "false"); };
+  $("tab-file").onclick = () => { $("diff").hidden = true; $("result").hidden = false; $("tab-file").classList.add("active"); $("tab-diff").classList.remove("active"); $("tab-diff").setAttribute("aria-selected", "false"); $("tab-file").setAttribute("aria-selected", "true"); };
+  $("revoke").onclick = () => run(async () => { await api("code.revoke", { handle: grant.handle }); grant = null; selected = null; revision++; clearProposal(); $("editor").value = ""; $("editor-area").hidden = true; $("empty").hidden = false; $("history").hidden = true; $("files").replaceChildren(); $("directory").textContent = "No project open"; $("filename").textContent = "No file selected"; await projects(); await sessions(); status("Project access closed"); });
   $("sessions").onclick = e => { const b = e.target.closest("[data-session]"); if (b) void run(async () => { const result = await api("code.session", { handle: grant.handle, sessionId: b.dataset.session }); $("history-title").textContent = result.title; $("turns").innerHTML = result.turns.map(t => `<div class="turn"><strong>${esc(t.role)}</strong><p>${esc(t.content)}</p></div>`).join(""); $("history").hidden = false; $("history").scrollIntoView({ block: "start" }); }); };
   $("close-history").onclick = () => { $("history").hidden = true; };
   void run(async () => { await projects(); const models = await api("models.list"); for (const m of models.filter(m => m.status === "ready")) { const option = document.createElement("option"); option.value = m.alias; option.textContent = m.label || m.alias; $("model").append(option); } if ($("model").options.length === 2) $("model").selectedIndex = 1; });

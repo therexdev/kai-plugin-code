@@ -5,7 +5,7 @@ const flush = async () => { for (let i = 0; i < 12; i++) await new Promise(resol
 function fixture(overrides = {}) {
   const elements = new Map(), calls = [];
   function element(id) { return { id, textContent: "", innerHTML: "", value: "", dataset: {}, hidden: false, disabled: false, options: id === "model" ? [{}] : [],
-    append(option) { this.options.push(option); }, set selectedIndex(index) { this.value = this.options[index]?.value || ""; }, classList: { add() {}, remove() {}, toggle() {} }, scrollIntoView() {}, replaceChildren() { this.innerHTML = ""; }, insertAdjacentHTML(_where, value) { this.innerHTML += value; } }; }
+    setAttribute() {}, append(option) { this.options.push(option); }, set selectedIndex(index) { this.value = this.options[index]?.value || ""; }, classList: { add() {}, remove() {}, toggle() {} }, scrollIntoView() {}, replaceChildren() { this.innerHTML = ""; }, insertAdjacentHTML(_where, value) { this.innerHTML += value; } }; }
   for (const [, id] of html.matchAll(/\bid="([^"]+)"/g)) elements.set(id, element(id));
   const defaults = {
     "code.projects": { projects: [{ id: "old", name: "Existing <script>project</script>", sessions: 1 }] },
@@ -17,7 +17,7 @@ function fixture(overrides = {}) {
     "code.propose": { id: "proposal", path: "app.js", summary: "AI change", diff: "-old code\n+new code", content: "new code" },
     "code.apply": { applied: true, path: "app.js" }, "code.revoke": { revoked: true },
   };
-  const context = vm.createContext({ console, window: { kai: { async call(method, input) { calls.push({ method, input }); if (Object.hasOwn(overrides, method)) return typeof overrides[method] === "function" ? overrides[method](input) : overrides[method]; return defaults[method]; } } },
+  const context = vm.createContext({ console, window: { KaiPluginNotice: { attach(element) { return { show(message, { error } = {}) { element.textContent = message; element.hidden = false; element.classList.toggle("error", error); }, clear() { element.textContent = ""; element.hidden = true; } }; } }, kai: { async call(method, input) { calls.push({ method, input }); if (Object.hasOwn(overrides, method)) return typeof overrides[method] === "function" ? overrides[method](input) : overrides[method]; return defaults[method]; } } },
     document: { getElementById(id) { assert.ok(elements.has(id), `Missing UI element ${id}`); return elements.get(id); }, querySelectorAll() { return []; }, createElement: tag => element(tag) } });
   vm.runInContext(source, context); return { calls, defaults, $: id => elements.get(id), async click(id) { await elements.get(id).onclick(); await flush(); }, async openFile() { await this.click("choose"); elements.get("files").onclick({ target: { closest: () => ({ dataset: { file: "app.js", kind: "file" } }) } }); await flush(); } };
 }

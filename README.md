@@ -2,7 +2,9 @@
 
 A local coding workspace for **KAI Core 0.2.0 or later**. Install the signed `kai.code` release package through Core's plugin catalog or package installer.
 
-## Available in 0.1.0
+The separate plugin window uses the original Koinos Code project and chat rail, folder-selection screen, bottom task composer, and review cards in the same light workspace style as Core. File context can be expanded or collapsed without changing the file. Notices have a dismiss button.
+
+## Available capabilities
 
 - Open a project with the native folder picker, or explicitly grant session access to a saved project.
 - Reuse the existing KAI `code-projects.json` registry and view earlier coding sessions without moving project files.
