@@ -1,15 +1,37 @@
-# Koinos Code plugin
+# Koinos Code — Foundation plugin
 
-The original Koinos Code workspace, installed separately in KAI Core. Its project and conversation rails, folder and GitHub screens, composer, plan review, edit diffs, command approvals, slash commands and model/tool pickers use the original application renderer and styles.
+Version 0.3.0 requires KAI Foundation 0.7.0 (plugin API 3).
 
-The plugin runs the original `CodeAgent`, `CodeProjects`, GitHub client and gateway handlers through publisher-pinned native brokers. It supports multi-file coding, new files, reviewed commands, project instructions, helper agents, plan-first runs, conversation history, project model pins, selected tools, GitHub connection/cloning, branches, commits, pushes and pull requests. Model-generated edits and commands still pause for approval. Native review is bound to the actual proposed operation; a plugin cannot substitute its own description for the operation being approved.
+The installed package owns the coding engine, project and conversation storage, Git/GitHub client, command and edit review, slash commands, helper agents, and complete coding interface. Core supplies local model inference, installation/lifecycle, OS secret encryption, and native review through its documented API. There is no dependency on Core's old CodeAgent or HTTP gateway feature routes.
 
-Existing projects, sessions and GitHub connection data stay at their original paths. Corrupt records and changes made outside Core stop writes instead of resetting saved data. Project tools and interface preferences are imported from the original desktop origin, then stored in persistent plugin storage. Code stays local: project context does not silently move to a network model.
+Code keeps source-code inference local. Project tools are optional: install KAI Tools to lend selected tools to a project. Those calls use the declared `kai.tools` service; Code never opens Tools' account or configuration files. Missing Tools does not prevent ordinary coding. GitHub tokens are encrypted with the OS storage API in Code's own data directory.
 
-The renderer has no Node access, direct filesystem access, arbitrary network requests or unrestricted IPC. Private Core/profile locations cannot be selected as coding projects. Closing or disabling the plugin cancels its active runs and pending approvals.
+The interface retains projects, sessions, model pins, planning, multi-file changes, command review, GitHub cloning, branches, commits, pushes and pull requests. A proposed file change or command requires approval before execution. Closing the app view leaves the service available while KAI runs; disabling, updating or quitting revokes the service and cancels its work.
 
-`code.execute` grants access to the original coding workspace and its separately reviewed filesystem, process and Git actions. Earlier bounded file-edit capabilities remain available for compatibility. `storage.read`/`storage.write` preserve interface preferences; `desktop.preferences` can read only the fixed, non-secret Code/interface preference keys.
+**Trust:** this is a native plugin. Installing it explicitly trusts its code with full computer and application access. The rendered interface is sandboxed, but native code is not. Native review and project checks are product safeguards, not an OS security boundary against a malicious plugin.
 
-Run `npm test` for renderer transport and protocol tests. Core's `plugin-code-workspace.test.js` and `plugin-code-original-engine.test.js` exercise route scoping, native review, lifetime cancellation, and a real original CodeAgent edit against generated project files. The native parity smoke exercises the original UI in the actual sandboxed plugin host. No user files, paid models or real GitHub publishing are used by these tests.
+Saved data belongs to this plugin's Foundation data directory. This version does not migrate or delete the original application's projects, sessions, connected accounts, or wallet files.
 
-Original UI source baseline: `therexdev/kaiapp` commit `34d17faa0526213b8fc0ac7a65aa7f2c186c6547`, `ui/code-view.js`, the `view-code` section of `ui/index.html`, `ui/styles.css`, and `ui/product-experience.css`. The source renderer is retained; the new bridge changes only its transport and surrounding application window.
+## Public integration
+
+The manifest declares `kai.code` with a `projects` method returning project IDs, display names and missing-folder status. It consumes `kai.tools` (`list`, `call`) when a project chooses extra tools. No remote rental endpoint is exposed.
+
+The native entry is `plugin/service/index.js`, exporting `create(api)`. Its renderer calls `code.request`, `code.poll`, `code.cancel`, and `code.chooseFolder`. The familiar `/core/code/...` strings are plugin-internal operation names; they are not requests to the Core server.
+
+## Building and verification
+
+No npm runtime dependencies are required. `npm test` exercises the original renderer protocol and the actual installed-engine code with generated temporary projects, including a real reviewed file write, session persistence, cancellation, and rejection of network models for private source.
+
+Package this repository's `plugin` directory with the Foundation packer, then run `node scripts/verify-package.js`. Signing keys must stay outside the repository. Package signing does not mean that KAI has audited the publisher.
+
+The preserved interface originated at `therexdev/kaiapp` commit `34d17faa0526213b8fc0ac7a65aa7f2c186c6547`; native engines were extracted from Core 0.6.3 and are now maintained here. Native Windows/macOS dialogs, live GitHub publishing and real model inference require separate integration verification.
+
+## Foundation package publication
+
+Requires KAI Core **0.7.0 or later**, manifest schema 2/API 3 and native API v1. Source lives in `plugin/`, including its service and all runtime dependencies. Runtime installation never runs npm or dependency hooks.
+
+Before signing, install any author dependencies with `npm ci --ignore-scripts` when this repository has a lockfile, run `npm run build --if-present`, then `node scripts/verify-package.js --source` and `npm test`. The source-only check uses a temporary in-memory test signature; it does not claim a publisher release was signed.
+
+Pack the complete plugin using Core's `scripts/core/pack-plugin.js`, keeping the publisher private key outside every repository. Place the new immutable signed asset at `dist/<repository-name>-<manifest-version>.kaiplugin`, then run `node scripts/verify-package.js`. The release verifier checks the actual publisher signature and exact source/assets/dependency contents against the same package rules as Core. Its standalone format snapshot and SHA-256 provenance are under `scripts/package-format-v3*`; it never imports or executes submitted plugin code.
+
+CI tests source on `foundation-v1`, pull requests and `main` on Windows, macOS and Linux. It checks any signed asset present for the current version. Publication runs only from `main`, only when that exact signed asset exists, and only after every check passes. Existing release assets must match byte-for-byte and are never overwritten. Branch builds cannot publish releases. Native device/integration checks remain necessary before a release; unit tests do not replace them.
