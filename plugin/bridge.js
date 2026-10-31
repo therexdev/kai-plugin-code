@@ -15,14 +15,18 @@ async function pluginResponse(feature, result, signal) {
   const body = new ReadableStream({
     start(c) { controller = c; signal?.addEventListener("abort", abort, {once:true}); if(signal?.aborted) abort(); },
     async pull(c) {
-      if(stopped)return;
       try {
-        const next=await call(feature+".poll",{streamId:result.streamId});
-        if(stopped)return;
-        for(const text of next.chunks||[])c.enqueue(new TextEncoder().encode(text));
-        if(next.error)throw Error(next.error);
-        if(next.done){stopped=true;signal?.removeEventListener("abort",abort);c.close();}
-        else if(!next.chunks?.length)await new Promise(resolve=>setTimeout(resolve,150));
+        // Keep satisfying this read across empty native polls. Returning with
+        // no chunk can leave ReadableStream waiting forever for another pull.
+        while (!stopped) {
+          const next=await call(feature+".poll",{streamId:result.streamId});
+          if(stopped)return;
+          for(const text of next.chunks||[])c.enqueue(new TextEncoder().encode(text));
+          if(next.error)throw Error(next.error);
+          if(next.done){stopped=true;signal?.removeEventListener("abort",abort);c.close();return;}
+          if(next.chunks?.length)return;
+          await new Promise(resolve=>setTimeout(resolve,150));
+        }
       } catch(error){if(!stopped){await cancel();c.error(error);}}
     },
     cancel

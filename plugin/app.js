@@ -27,6 +27,7 @@
     sessions: [],
     sessionId: null,
     runId: null,
+    runController: null,
     gh: null,
     browseFor: "project", // "project" | "clone"
     browsePath: "",
@@ -263,6 +264,7 @@
   }
 
   async function selectProject(id) {
+    if (kc.runController) return status("Stop the current task before changing conversations.");
     kc.projectId = id;
     kc.sessionId = null;
     kc.sessions = [];
@@ -283,6 +285,7 @@
   }
 
   async function selectSession(id) {
+    if (kc.runController) return status("Stop the current task before changing conversations.");
     kc.sessionId = id;
     renderSessions();
     await loadTranscript();
@@ -305,6 +308,7 @@
   });
 
   async function newSession() {
+    if (kc.runController) return status("Stop the current task before changing conversations.");
     try {
       const j = await api(`/core/code/projects/${encodeURIComponent(kc.projectId)}/sessions`, { method: "POST", body: "{}" });
       kc.sessionId = j.session.id;
@@ -745,6 +749,7 @@
   }
 
   function send() {
+    if (kc.runController) return;
     const p = currentProject();
     if (!p) return status("Choose a folder first.");
     if (p.missing) return status("That folder no longer exists — forget the project, or put the folder back.");
@@ -761,12 +766,15 @@
 
   async function run(task, { mode = "act", plan = "" } = {}) {
     const p = currentProject();
-    if (!p) return;
+    if (!p || kc.runController) return;
+    const controller = new AbortController();
+    kc.runController = controller;
     $("btn-kc-run").disabled = true;
     $("btn-kc-stop").hidden = false;
-    status(mode === "plan" ? "reading the project…" : "running…");
+    status("Opening the project…");
     try {
       const resp = await fetch("/core/code/run", {
+        signal: controller.signal,
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -788,7 +796,8 @@
         if (ev.session) kc.sessionId = ev.session.sessionId;
         const t = ev.trace;
         if (t?.type === "start") kc.runId = t.runId;
-        if (t?.type === "tool") trace(`» ${t.name} ${t.args}`);
+        if (t?.type === "phase") status(t.text);
+        if (t?.type === "tool") { status(`Using ${t.name}…`); trace(`» ${t.name} ${t.args}`); }
         if (t?.type === "obs") trace(`  ${t.text}`);
         if (t?.type === "note") trace(t.text);
         if (t?.type === "approval-request") {
@@ -817,8 +826,9 @@
       await refreshSessionList();
       await renderGit();
     } catch (e) {
-      status(e.message);
+      status(controller.signal.aborted ? "Stopped. No further actions will run." : e.message);
     } finally {
+      kc.runController = null;
       $("btn-kc-run").disabled = false;
       $("btn-kc-stop").hidden = true;
       kc.runId = null;
@@ -827,6 +837,7 @@
 
   $("btn-kc-run").addEventListener("click", send);
   $("btn-kc-stop").addEventListener("click", async () => {
+    kc.runController?.abort();
     if (!kc.runId) return;
     await fetch("/core/code/stop", {
       method: "POST",

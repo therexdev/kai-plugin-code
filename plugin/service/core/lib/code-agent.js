@@ -396,6 +396,7 @@ class CodeAgent {
       let nudges = 0;
       for (let step = 0; step < budget; step++) {
         if (run.aborted) return { runId, answer: "", steps: step, reason: "stopped", wrote };
+        onTrace({ type: "phase", text: planning ? "Preparing the plan with your model…" : "Working with your model…" });
         const out = String((await this.chatFn({ model, messages: trimConvo(convo), maxTokens: MAX_TOKENS_PER_CALL, signal })) ?? "");
         if (run.aborted) return { runId, answer: "", steps: step, reason: "stopped", wrote };
         // Strict first. Then salvage, which recovers the call a small model
@@ -449,6 +450,7 @@ class CodeAgent {
         if (action.answer) {
           convo.push({ role: "assistant", content: out });
           convo.push({ role: "user", content: "Give the final answer to the task now, as plain text." });
+          onTrace({ type: "phase", text: "Writing the final response…" });
           const fin = String((await this.chatFn({ model, messages: trimConvo(convo), maxTokens: MAX_TOKENS_PER_CALL, signal })) ?? "");
           return { runId, answer: truthfulAnswer(fin.trim(), wrote), steps: step, reason: planning ? "planned" : "answered", wrote };
         }

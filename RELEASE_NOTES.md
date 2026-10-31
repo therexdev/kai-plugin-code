@@ -1,9 +1,3 @@
-# Koinos Code 0.3.1
+# Koinos Code 0.3.2
 
-Requires **KAI Core 0.7.3 or later**. Update Core before installing this plugin update.
-
-Project-removal confirmation now uses Core’s styled dialog and waits for the user’s decision. Cancelling keeps the project selected. Removing a project from the list continues to leave its folder and files untouched.
-
-Saved plugin data and feature behavior are preserved.
-
-Validation covers deferred and cancelled reviews without live account, payment or node operations. Native plugin services still require full computer/application trust; renderer UI remains sandboxed.
+Fixes coding tasks getting stuck after an empty response poll. Delayed plans and approvals now continue to arrive, model-working phases are visible, and Stop cancels the active response. Concurrent sends and conversation switches cannot mix tasks. Every edit and command still requires review.
