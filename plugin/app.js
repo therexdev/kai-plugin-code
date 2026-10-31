@@ -5,8 +5,8 @@
  * through window.prompt(). **window.prompt() DOES NOT EXIST IN ELECTRON** — it
  * returns null without ever showing anything, so in the packaged app every one
  * of those buttons silently did nothing. The same trap is recorded in
- * ui/tools-view.js from an earlier field report. Nothing here uses prompt() or
- * confirm(); every input is an inline form, and folder choice goes through the
+ * ui/tools-view.js from an earlier field report. Inputs use inline forms, confirmations use Core’s styled dialogs, and
+ * folder choice goes through the
  * NATIVE picker when the app shell offers one, with an in-app directory
  * browser everywhere else.
  *
@@ -708,9 +708,8 @@
   $("btn-kc-forget").addEventListener("click", async () => {
     const p = currentProject();
     if (!p) return;
-    // confirm() DOES work in Electron (unlike prompt), and this is a genuine
-    // are-you-sure — though it says plainly that the folder is untouched.
-    if (!window.confirm(`Remove "${p.name}" from this list?\n\nThe folder and its files are left exactly as they are.`)) return;
+    // Await Core’s styled confirmation before changing the project list.
+    if (!await window.kai.dialogs.confirm(`Remove "${p.name}" from this list?\n\nThe folder and its files are left exactly as they are.`)) return;
     try {
       await api(`/core/code/projects/${encodeURIComponent(p.id)}`, { method: "DELETE" });
       kc.projectId = null;

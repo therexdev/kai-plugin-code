@@ -1,3 +1,5 @@
 node_modules/
 *.pem
 .env
+
+/dist/kai-plugin-code-0.3.1.kaiplugin

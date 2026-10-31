@@ -2,7 +2,7 @@
   "schema": 2,
   "apiVersion": 3,
   "id": "kai.code",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "name": "Koinos Code",
   "description": "The complete original coding workspace: projects and conversations, plan-first coding, reviewed file changes and commands, project tools, slash commands, and GitHub.",
   "entry": "index.html",

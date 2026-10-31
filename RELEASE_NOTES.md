@@ -1,7 +1,9 @@
-# 0.3.0 — Independent Foundation plugin
+# Koinos Code 0.3.1
 
-Requires KAI Foundation 0.7.0 and plugin API 3. The plugin now ships and owns its native feature engine, interface, assets, state and dependencies. Core exposes documented shared services instead of private feature controllers.
+Requires **KAI Core 0.7.3 or later**. Update Core before installing this plugin update.
 
-This is a fresh-profile architecture. It does not import or delete original-app documents, accounts or settings. Installation explicitly requires trust in native code with full computer and application access. The interface remains sandboxed.
+Project-removal confirmation now uses Core’s styled dialog and waits for the user’s decision. Cancelling keeps the project selected. Removing a project from the list continues to leave its folder and files untouched.
 
-Feature state is stored separately under the plugin's Foundation data directory. Existing interface controls and feature workflows remain available.
+Saved plugin data and feature behavior are preserved.
+
+Validation covers deferred and cancelled reviews without live account, payment or node operations. Native plugin services still require full computer/application trust; renderer UI remains sandboxed.
